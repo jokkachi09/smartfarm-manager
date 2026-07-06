@@ -1,0 +1,2073 @@
+<!DOCTYPE html>
+<html lang="ko" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GreenThumb - 스마트팜 관리 시스템</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Chart.js for Sensor Visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+    // Tailwind Custom Configuration for Dark Mode & Colors
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              200: '#bbf7d0',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+              800: '#166534',
+              900: '#14532d',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style>
+    /* Custom scrollbar and smooth transitions */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+    .dark ::-webkit-scrollbar-thumb {
+      background: #475569;
+    }
+    * {
+      transition: background-color 0.2s ease, border-color 0.2s ease;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen font-sans">
+
+  <!-- ==================== LOGIN SCREEN ==================== -->
+  <div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-brand-100 to-emerald-800 dark:from-slate-950 dark:to-emerald-950 p-4">
+    <div class="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-md border border-brand-100 dark:border-slate-700 relative overflow-hidden transition-all transform scale-100">
+      <!-- Decorative Top Bar -->
+      <div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-brand-500 to-emerald-600"></div>
+      
+      <div class="text-center mb-8">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 mb-4 shadow-inner">
+          <i class="fa-solid fa-leaf text-3xl animate-pulse"></i>
+        </div>
+        <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">GreenThumb 스마트팜</h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">친환경 스마트팜 통합 제어 및 모니터링 시스템</p>
+      </div>
+
+      <form id="login-form" class="space-y-5">
+        <div>
+          <label class="block text-sm font-semibold mb-1.5 text-slate-700 dark:text-slate-300">사용자 계정 (ID)</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+              <i class="fa-solid fa-user"></i>
+            </span>
+            <input type="text" id="login-id" required value="admin" class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm" placeholder="아이디를 입력하세요">
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-1.5 text-slate-700 dark:text-slate-300">비밀번호</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+              <i class="fa-solid fa-lock"></i>
+            </span>
+            <input type="password" id="login-pw" required value="1234" class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm" placeholder="비밀번호를 입력하세요">
+          </div>
+        </div>
+        <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 rounded-xl transition duration-150 flex items-center justify-center gap-2 shadow-lg shadow-brand-600/20">
+          로그인 <i class="fa-solid fa-arrow-right text-xs"></i>
+        </button>
+      </form>
+      <div class="mt-6 text-center text-xs text-slate-400">
+        기본 데모 로그인 정보: <span class="font-semibold text-slate-500 dark:text-slate-300">admin / 1234</span>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ==================== MAIN CONTAINER ==================== -->
+  <div id="main-app" class="hidden min-h-screen flex flex-col md:flex-row">
+    
+    <!-- Navigation Sidebar -->
+    <aside class="w-full md:w-64 bg-white dark:bg-slate-800 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-700 flex flex-col justify-between shrink-0 z-40">
+      <div>
+        <!-- Brand Logo Area -->
+        <div class="p-6 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center text-white">
+              <i class="fa-solid fa-leaf text-sm"></i>
+            </div>
+            <span class="font-bold text-lg text-slate-900 dark:text-white tracking-wide">GreenThumb</span>
+          </div>
+          <button id="sidebar-close-btn" class="md:hidden text-slate-500 hover:text-slate-800">
+            <i class="fa-solid fa-bars text-xl"></i>
+          </button>
+        </div>
+
+        <!-- Navigation Menus -->
+        <nav class="p-4 space-y-1" id="nav-menu">
+          <button data-target="dashboard" class="nav-item active w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition duration-150 text-brand-600 bg-brand-50 dark:text-brand-300 dark:bg-brand-950/40">
+            <i class="fa-solid fa-chart-pie text-lg"></i> 대시보드
+          </button>
+          <button data-target="plants" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition duration-150 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white">
+            <i class="fa-solid fa-seedling text-lg"></i> 식물 관리
+          </button>
+          <button data-target="sensors" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition duration-150 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white">
+            <i class="fa-solid fa-microchip text-lg"></i> 센서 데이터
+          </button>
+          <button data-target="logs" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition duration-150 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white">
+            <i class="fa-solid fa-book-open text-lg"></i> 성장일지
+          </button>
+          <button data-target="settings" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition duration-150 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white">
+            <i class="fa-solid fa-sliders text-lg"></i> 설정
+          </button>
+        </nav>
+      </div>
+
+      <!-- User Profile & Logout -->
+      <div class="p-4 border-t border-slate-100 dark:border-slate-700/50 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 font-bold">
+            U
+          </div>
+          <div>
+            <div class="text-sm font-semibold text-slate-900 dark:text-white" id="user-display-name">관리자</div>
+            <div class="text-xs text-slate-400">온라인</div>
+          </div>
+        </div>
+        <button id="logout-btn" title="로그아웃" class="text-slate-400 hover:text-rose-500 transition duration-150 p-2 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/20">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col min-w-0">
+      <!-- Header Bar -->
+      <header class="h-16 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 flex items-center justify-between shrink-0 relative">
+        <h2 id="page-title" class="text-lg font-bold text-slate-900 dark:text-white">대시보드</h2>
+        <div class="flex items-center gap-4">
+          
+          <!-- ==================== NOTIFICATION BELL WITH DROPDOWN ==================== -->
+          <div class="relative" id="alert-bell">
+            <button id="alert-bell-btn" class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 transition duration-150 relative focus:outline-none">
+              <i class="fa-regular fa-bell text-lg"></i>
+              <span id="alert-badge" class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-rose-500 rounded-full hidden border-2 border-white dark:border-slate-800"></span>
+            </button>
+            
+            <!-- Notification Dropdown Panel -->
+            <div id="alert-dropdown" class="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 py-2 hidden z-50 transform origin-top-right transition-all">
+              <div class="px-4 py-2.5 border-b border-slate-100 dark:border-slate-700/50 flex justify-between items-center">
+                <span class="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <i class="fa-solid fa-bell text-brand-500"></i> 실시간 스마트 알림
+                </span>
+                <span id="alert-dropdown-count" class="text-[10px] bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400 font-extrabold px-2 py-0.5 rounded-full">0개</span>
+              </div>
+              
+              <!-- Alerts List Container -->
+              <div id="alert-dropdown-list" class="max-h-64 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700/50">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+          </div>
+          <!-- ==================== END OF NOTIFICATION BELL ==================== -->
+
+          <!-- Today Date -->
+          <div class="text-sm text-slate-500 dark:text-slate-400 hidden sm:block font-medium" id="header-date">
+            2026. 07. 06. (월요일)
+          </div>
+        </div>
+      </header>
+
+      <!-- Dynamic Content Wrapper -->
+      <div class="flex-1 p-6 overflow-y-auto space-y-6" id="content-area">
+        
+        <!-- ==================== DASHBOARD PAGE ==================== -->
+        <section id="page-dashboard" class="space-y-6">
+          
+          <!-- Top Statistics Overview Card Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            
+            <!-- Card 1: Registered Plants Count -->
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700/50 flex items-center justify-between shadow-sm">
+              <div>
+                <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block mb-1">등록된 식물</span>
+                <span class="text-2xl font-bold" id="stat-plant-count">0</span>
+              </div>
+              <div class="w-12 h-12 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl flex items-center justify-center text-emerald-500">
+                <i class="fa-solid fa-seedling text-xl"></i>
+              </div>
+            </div>
+
+            <!-- Card 2: Maintenance Tasks count -->
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700/50 flex items-center justify-between shadow-sm">
+              <div>
+                <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block mb-1">오늘 할 일</span>
+                <span class="text-2xl font-bold" id="stat-tasks-count">0</span>
+              </div>
+              <div class="w-12 h-12 bg-amber-50 dark:bg-amber-950/40 rounded-xl flex items-center justify-center text-amber-500">
+                <i class="fa-solid fa-clipboard-list text-xl"></i>
+              </div>
+            </div>
+
+            <!-- Card 3: Growth Logs count -->
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700/50 flex items-center justify-between shadow-sm">
+              <div>
+                <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block mb-1">기록된 일지</span>
+                <span class="text-2xl font-bold" id="stat-logs-count">0</span>
+              </div>
+              <div class="w-12 h-12 bg-sky-50 dark:bg-sky-950/40 rounded-xl flex items-center justify-center text-sky-500">
+                <i class="fa-solid fa-book text-xl"></i>
+              </div>
+            </div>
+
+            <!-- Card 4: Hardware Sensor Status -->
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700/50 flex items-center justify-between shadow-sm">
+              <div>
+                <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block mb-1">센서 상태</span>
+                <span class="text-2xl font-bold text-emerald-600 dark:text-emerald-400" id="stat-sensor-status">정상</span>
+              </div>
+              <div class="w-12 h-12 bg-indigo-50 dark:bg-indigo-950/40 rounded-xl flex items-center justify-center text-indigo-500">
+                <i class="fa-solid fa-wave-square text-xl"></i>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Mid Section: Todo List & Active Sensor Live Snapshot -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Left: Today's Tasks (7 / 12) -->
+            <div class="lg:col-span-7 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-sm flex flex-col h-[400px]">
+              <div class="flex items-center justify-between mb-4 shrink-0">
+                <div class="flex items-center gap-2">
+                  <i class="fa-solid fa-bell text-amber-500"></i>
+                  <h3 class="font-bold text-slate-900 dark:text-white">오늘의 관리 작업 알림</h3>
+                </div>
+                <span class="text-xs bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 font-semibold px-2.5 py-1 rounded-full" id="task-badge">0개 예정</span>
+              </div>
+
+              <!-- Task List Dynamic Content -->
+              <div class="flex-1 overflow-y-auto pr-1 space-y-3" id="dashboard-tasks-container">
+                <!-- Fallback content if empty -->
+                <div class="flex flex-col items-center justify-center h-full text-center text-slate-400 dark:text-slate-500">
+                  <i class="fa-solid fa-circle-check text-4xl text-emerald-500 mb-2"></i>
+                  <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">오늘 완료해야 할 작업이 없습니다!</p>
+                  <p class="text-xs mt-1">식물들이 쾌적하고 훌륭하게 자라고 있습니다.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Live Sensor Quick Glimpse (5 / 12) -->
+            <div class="lg:col-span-5 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-sm flex flex-col h-[400px]">
+              <div class="flex items-center justify-between mb-4 shrink-0">
+                <div class="flex items-center gap-2">
+                  <i class="fa-solid fa-bolt text-amber-400 animate-bounce"></i>
+                  <h3 class="font-bold text-slate-900 dark:text-white">실시간 센서 정보</h3>
+                </div>
+                <span class="flex h-2.5 w-2.5 relative">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                </span>
+              </div>
+
+              <!-- Live Sensor Cards -->
+              <div class="grid grid-cols-2 gap-4 flex-1">
+                <!-- Temp -->
+                <div class="bg-slate-50 dark:bg-slate-700/30 p-4 rounded-xl flex flex-col justify-between border border-slate-100 dark:border-slate-700">
+                  <div class="flex items-center justify-between text-slate-400">
+                    <span class="text-xs font-semibold">온도</span>
+                    <i class="fa-solid fa-temperature-three-quarters text-rose-500 text-sm"></i>
+                  </div>
+                  <div class="mt-2">
+                    <span class="text-2xl font-black" id="dash-sensor-temp">24.5</span>
+                    <span class="text-xs text-slate-400 ml-0.5">°C</span>
+                  </div>
+                </div>
+
+                <!-- Humidity -->
+                <div class="bg-slate-50 dark:bg-slate-700/30 p-4 rounded-xl flex flex-col justify-between border border-slate-100 dark:border-slate-700">
+                  <div class="flex items-center justify-between text-slate-400">
+                    <span class="text-xs font-semibold">습도</span>
+                    <i class="fa-solid fa-droplet text-blue-500 text-sm"></i>
+                  </div>
+                  <div class="mt-2">
+                    <span class="text-2xl font-black" id="dash-sensor-humid">58</span>
+                    <span class="text-xs text-slate-400 ml-0.5">%</span>
+                  </div>
+                </div>
+
+                <!-- Soil Moisture -->
+                <div class="bg-slate-50 dark:bg-slate-700/30 p-4 rounded-xl flex flex-col justify-between border border-slate-100 dark:border-slate-700">
+                  <div class="flex items-center justify-between text-slate-400">
+                    <span class="text-xs font-semibold">토양 수분</span>
+                    <i class="fa-solid fa-faucet-drip text-cyan-600 text-sm"></i>
+                  </div>
+                  <div class="mt-2">
+                    <span class="text-2xl font-black" id="dash-sensor-soil">42</span>
+                    <span class="text-xs text-slate-400 ml-0.5">%</span>
+                  </div>
+                </div>
+
+                <!-- Light intensity -->
+                <div class="bg-slate-50 dark:bg-slate-700/30 p-4 rounded-xl flex flex-col justify-between border border-slate-100 dark:border-slate-700">
+                  <div class="flex items-center justify-between text-slate-400">
+                    <span class="text-xs font-semibold">조도</span>
+                    <i class="fa-solid fa-sun text-amber-500 text-sm"></i>
+                  </div>
+                  <div class="mt-2">
+                    <span class="text-2xl font-black" id="dash-sensor-lux">350</span>
+                    <span class="text-xs text-slate-400 ml-0.5">Lux</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Bottom Area: Recent Activity (Growth logs) -->
+          <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-sm">
+            <h3 class="font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+              <i class="fa-solid fa-clock-rotate-left text-slate-500"></i> 최근 등록된 성장 일지
+            </h3>
+            <div id="dashboard-recent-logs" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <!-- Dynamically populated, or placeholder -->
+              <div class="col-span-full py-8 text-center text-slate-400">
+                등록된 최근 일지가 없습니다.
+              </div>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ==================== PLANTS PAGE ==================== -->
+        <section id="page-plants" class="hidden space-y-6">
+          
+          <!-- Actions bar -->
+          <div class="flex items-center justify-between gap-4 flex-wrap">
+            <h3 class="font-bold text-slate-900 dark:text-white text-lg">재배중인 식물 목록</h3>
+            <button onclick="toggleModal('plant-modal', true)" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 shadow-lg shadow-brand-600/10 transition">
+              <i class="fa-solid fa-plus text-xs"></i> 식물 등록하기
+            </button>
+          </div>
+
+          <!-- Plant Cards Grid -->
+          <div id="plants-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <!-- Dynamically populated via script -->
+          </div>
+
+          <!-- Empty fallback screen -->
+          <div id="plants-empty" class="hidden flex-col items-center justify-center py-20 text-center bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700/50">
+            <div class="w-16 h-16 bg-brand-50 dark:bg-slate-700 rounded-full flex items-center justify-center text-brand-600 dark:text-brand-400 mb-4 text-2xl">
+              <i class="fa-solid fa-seedling"></i>
+            </div>
+            <h4 class="font-bold text-slate-900 dark:text-white text-lg">등록된 식물이 없습니다</h4>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-sm">당신의 친환경 스마트팜에 첫 번째 식물을 등록하고 관리를 받아보세요!</p>
+            <button onclick="toggleModal('plant-modal', true)" class="mt-4 bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-xl text-sm font-semibold">
+              첫 식물 등록하기
+            </button>
+          </div>
+
+        </section>
+
+        <!-- ==================== SENSORS PAGE ==================== -->
+        <section id="page-sensors" class="hidden space-y-6">
+          
+          <!-- 1행에 온도/대기습도, 2행에 토양수분/조도를 구현하기 위해 md:grid-cols-2 구성 -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            
+            <!-- 1행 좌: Temperature -->
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-sm flex items-center gap-4">
+              <div class="w-12 h-12 rounded-full bg-rose-50 dark:bg-rose-950/20 text-rose-500 flex items-center justify-center text-lg shrink-0">
+                <i class="fa-solid fa-temperature-high"></i>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-xs text-slate-400 font-semibold">실시간 온도</div>
+                <div class="text-xl font-bold mt-0.5"><span id="real-temp">24.5</span> °C</div>
+                <div class="text-xs text-emerald-500 font-medium flex items-center gap-1 mt-1">
+                  <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span> 적정 범위 (20°C - 28°C)
+                </div>
+              </div>
+            </div>
+
+            <!-- 1행 우: Air Humidity -->
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-sm flex items-center gap-4">
+              <div class="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-950/20 text-blue-500 flex items-center justify-center text-lg shrink-0">
+                <i class="fa-solid fa-droplet"></i>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-xs text-slate-400 font-semibold">대기 습도</div>
+                <div class="text-xl font-bold mt-0.5"><span id="real-humid">58</span> %</div>
+                <div class="text-xs text-emerald-500 font-medium flex items-center gap-1 mt-1">
+                  <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span> 적정 범위 (45% - 75%)
+                </div>
+              </div>
+            </div>
+
+            <!-- 2행 좌: Soil Moisture -->
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-sm flex items-center gap-4">
+              <div class="w-12 h-12 rounded-full bg-cyan-50 dark:bg-cyan-950/20 text-cyan-500 flex items-center justify-center text-lg shrink-0">
+                <i class="fa-solid fa-glass-water"></i>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-xs text-slate-400 font-semibold">토양 수분</div>
+                <div class="text-xl font-bold mt-0.5"><span id="real-soil">42</span> %</div>
+                <div class="text-xs text-amber-500 font-medium flex items-center gap-1 mt-1">
+                  <span class="inline-block w-1.5 h-1.5 rounded-full bg-amber-500"></span> 약간 건조 (30% - 60%)
+                </div>
+              </div>
+            </div>
+
+            <!-- 2행 우: Brightness (Lux) -->
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-sm flex items-center gap-4">
+              <div class="w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-950/20 text-amber-500 flex items-center justify-center text-lg shrink-0">
+                <i class="fa-solid fa-sun"></i>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-xs text-slate-400 font-semibold">실시간 조도</div>
+                <div class="text-xl font-bold mt-0.5"><span id="real-lux">350</span> Lux</div>
+                <div class="text-xs text-emerald-500 font-medium flex items-center gap-1 mt-1">
+                  <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span> 일조량 충분
+                </div>
+              </div>
+            </div>
+            
+          </div>
+
+          <!-- Main Chart Section: 온도/습도/토양수분 차트와 조도 전용 차트 분리 설계 -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            <!-- Chart 1: Environment Standard Metrics -->
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-sm">
+              <div class="mb-4">
+                <h3 class="font-bold text-slate-900 dark:text-white">기온 &amp; 습도 환경 분석</h3>
+                <p class="text-xs text-slate-400">온도, 대기습도 및 토양수분의 실시간 5초 주기 연동 트렌드</p>
+              </div>
+              <div class="relative w-full h-[300px]">
+                <canvas id="envChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Chart 2: Sun/Light intensity metrics (Separated due to scale difference) -->
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-sm">
+              <div class="mb-4 flex items-center justify-between">
+                <div>
+                  <h3 class="font-bold text-slate-900 dark:text-white">실시간 일조량 (조도)</h3>
+                  <p class="text-xs text-slate-400">조도 센서(Lux) 수집 변화 전용 타임라인 그래프</p>
+                </div>
+                <!-- Manual Simulation Action Button -->
+                <button onclick="triggerDataSimulation()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1 rounded-lg text-[11px] font-semibold flex items-center gap-1 transition">
+                  <i class="fa-solid fa-wand-magic-sparkles"></i> 시뮬레이션 변경
+                </button>
+              </div>
+              <div class="relative w-full h-[300px]">
+                <canvas id="luxChart"></canvas>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Technical Notes For Arduino integration -->
+          <div class="bg-slate-100 dark:bg-slate-700/40 p-5 rounded-2xl border border-slate-200 dark:border-slate-700/80">
+            <h4 class="font-semibold text-slate-900 dark:text-white text-sm mb-2 flex items-center gap-2">
+              <i class="fa-solid fa-code text-indigo-500"></i> 아두이노 &amp; ESP32 연동 및 API 가이드
+            </h4>
+            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+              본 시스템은 완벽한 모듈식 데이터 구조를 취하고 있습니다. 외부 센서 장비(아두이노/ESP32)에서 본 웹애플리케이션의 엔드포인트로 JSON 형태의 REST API 호출을 전송하여 실시간 모니터링 수치를 변경할 수 있습니다.
+            </p>
+            <div class="mt-3 bg-slate-900 text-slate-300 p-3 rounded-lg font-mono text-xs overflow-x-auto">
+{
+  "device_id": "smartfarm_node_01",
+  "temperature": 24.5,
+  "humidity": 58.0,
+  "soil_moisture": 42.0,
+  "light_intensity": 350
+}
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ==================== GROWTH LOGS PAGE ==================== -->
+        <section id="page-logs" class="hidden space-y-6">
+          
+          <div class="flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <h3 class="font-bold text-slate-900 dark:text-white text-lg">농가 성장 일지</h3>
+              <p class="text-xs text-slate-400 mt-0.5">식물의 자라나는 흔적들을 시간순으로 기록하고 관리합니다.</p>
+            </div>
+            <button onclick="openLogModal(null)" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 shadow-lg shadow-brand-600/10">
+              <i class="fa-solid fa-pencil text-xs"></i> 오늘 일지 쓰기
+            </button>
+          </div>
+
+          <!-- Timeline Grid container -->
+          <div class="relative max-w-4xl mx-auto py-4">
+            
+            <!-- Vertical Timeline Center Line -->
+            <div class="absolute left-4 md:left-1/2 top-0 bottom-0 w-0.5 bg-slate-200 dark:bg-slate-700 transform md:-translate-x-1/2"></div>
+            
+            <!-- Dynamic Logs Timeline Destination -->
+            <div id="logs-timeline" class="space-y-8 relative">
+              <!-- Dynamically populated via JS -->
+            </div>
+
+            <!-- Fallback Screen if empty -->
+            <div id="logs-empty" class="hidden flex-col items-center justify-center py-16 text-center bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700/50 relative z-10">
+              <div class="w-14 h-14 bg-sky-50 dark:bg-slate-700 rounded-full flex items-center justify-center text-sky-500 mb-4 text-xl">
+                <i class="fa-solid fa-book"></i>
+              </div>
+              <h4 class="font-bold text-slate-900 dark:text-white text-md">성장 일지 기록이 비어있습니다</h4>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xs">자라나는 식물들의 변화를 매일 기록하면 건강한 스마트팜 관리에 매우 큰 도움이 됩니다.</p>
+              <button onclick="openLogModal(null)" class="mt-4 bg-sky-600 hover:bg-sky-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold">
+                첫 성장 일지 쓰기
+              </button>
+            </div>
+
+          </div>
+
+        </section>
+
+        <!-- ==================== SETTINGS PAGE ==================== -->
+        <section id="page-settings" class="hidden space-y-6 max-w-3xl">
+          
+          <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-sm divide-y divide-slate-100 dark:divide-slate-700/50">
+            
+            <!-- UI Theme Mode -->
+            <div class="p-6 flex items-center justify-between">
+              <div>
+                <h4 class="font-bold text-slate-900 dark:text-white">화면 테마 설정</h4>
+                <p class="text-xs text-slate-400 mt-0.5">화면 스타일을 라이트 모드 또는 다크 모드로 전환합니다.</p>
+              </div>
+              <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-700 p-1 rounded-xl">
+                <button id="theme-light-btn" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition" onclick="setTheme('light')">
+                  <i class="fa-solid fa-sun text-amber-500"></i> 라이트
+                </button>
+                <button id="theme-dark-btn" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition" onclick="setTheme('dark')">
+                  <i class="fa-solid fa-moon text-indigo-400"></i> 다크
+                </button>
+              </div>
+            </div>
+
+            <!-- Smart Notification Alert Switch -->
+            <div class="p-6 flex items-center justify-between">
+              <div>
+                <h4 class="font-bold text-slate-900 dark:text-white">스마트 관리 푸시 알림</h4>
+                <p class="text-xs text-slate-400 mt-0.5">물 주기 또는 비료 공급 시기가 되면 대시보드와 알림 벨에 표시합니다.</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="settings-notif-toggle" class="sr-only peer" checked onchange="toggleNotificationSetting()">
+                <div class="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-brand-600"></div>
+              </label>
+            </div>
+
+            <!-- Storage & Hard Reset -->
+            <div class="p-6 flex items-center justify-between">
+              <div>
+                <h4 class="font-bold text-rose-500">데이터 완전 초기화</h4>
+                <p class="text-xs text-slate-400 mt-0.5">저장된 식물, 성장일지 등 Local Storage에 기록된 모든 로컬 데이터를 초기화합니다.</p>
+              </div>
+              <button onclick="handleWipeDataBtn()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 dark:text-rose-400 px-4 py-2 rounded-xl text-xs font-semibold transition border border-rose-100 dark:border-rose-900/30">
+                <i class="fa-solid fa-trash-can mr-1"></i> 데이터 공장초기화
+              </button>
+            </div>
+
+          </div>
+
+          <!-- Author/App Credits Information (제작자 닉네임 "조까치" 적용) -->
+          <div class="text-center text-xs text-slate-400 space-y-1 pt-6">
+            <p>GreenThumb SmartFarm Management Client Web App - Ver 1.6.0</p>
+            <p>© 2026 제작자: <span class="font-bold text-slate-600 dark:text-slate-300">조까치</span>. All Rights Reserved.</p>
+          </div>
+
+        </section>
+
+      </div>
+    </main>
+
+  </div>
+
+
+  <!-- ==================== DIALOG MODALS ==================== -->
+  
+  <!-- Custom Confirm Modal (Replaces unsafe window.confirm) -->
+  <div id="confirm-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm hidden">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm shadow-2xl p-6 border border-slate-200 dark:border-slate-700 text-center transform transition-all scale-100">
+      <div class="w-12 h-12 bg-rose-50 dark:bg-rose-950/40 text-rose-500 rounded-full flex items-center justify-center text-xl mx-auto mb-4">
+        <i class="fa-solid fa-triangle-exclamation animate-bounce"></i>
+      </div>
+      <h3 id="confirm-title" class="font-bold text-lg text-slate-900 dark:text-white">삭제 확인</h3>
+      <p id="confirm-message" class="text-sm text-slate-500 dark:text-slate-400 mt-2">이 작업을 완료하시겠습니까?</p>
+      <div class="mt-6 flex items-center justify-center gap-3">
+        <button id="confirm-cancel-btn" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold">취소</button>
+        <button id="confirm-ok-btn" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold">삭제</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 1. Plant Register / Edit Modal -->
+  <div id="plant-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm hidden">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-700">
+      <div class="px-6 py-4 bg-brand-50 dark:bg-slate-700/50 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
+        <h3 id="plant-modal-title" class="font-bold text-slate-900 dark:text-white">새 식물 등록</h3>
+        <button onclick="toggleModal('plant-modal', false)" class="text-slate-400 hover:text-slate-600 dark:hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      
+      <form id="plant-form" class="p-6 space-y-4">
+        <!-- Hidden input for ID (in case of editing) -->
+        <input type="hidden" id="plant-id">
+        
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1">식물 이름</label>
+            <input type="text" id="plant-name" required class="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" placeholder="예: 무럭이, 초록이">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1">품종 (학명/일반명)</label>
+            <input type="text" id="plant-breed" required class="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" placeholder="예: 상추, 토마토, 허브">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1">심은 날짜 (파종일)</label>
+            <input type="date" id="plant-plantDate" required class="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1">스마트팜 내 위치</label>
+            <select id="plant-location" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+              <option value="A동 수경재배기">A동 수경재배기</option>
+              <option value="B동 토양베드">B동 토양베드</option>
+              <option value="C동 수직텃밭">C동 수직텃밭</option>
+              <option value="창가 모종판">창가 모종판</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Water / Fertilizer Cycle Setup -->
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1">물 주기 주기 (일 단위)</label>
+            <input type="number" id="plant-waterCycle" value="3" min="1" required class="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1">비료 주기 주기 (일 단위)</label>
+            <input type="number" id="plant-fertilizerCycle" value="14" min="1" required class="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+          </div>
+        </div>
+
+        <!-- Image URL Select / Preset -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1">식물 이미지 프리셋 선택</label>
+          <div class="grid grid-cols-5 gap-2" id="image-preset-container">
+            <!-- 5 basic cute plant icons/presets -->
+            <button type="button" onclick="selectPresetImage('plant-p1')" id="btn-plant-p1" class="preset-img-btn border-2 border-brand-500 p-1.5 rounded-lg focus:outline-none bg-slate-50 dark:bg-slate-700 text-center text-2xl">🌱</button>
+            <button type="button" onclick="selectPresetImage('plant-p2')" id="btn-plant-p2" class="preset-img-btn border border-slate-200 dark:border-slate-600 p-1.5 rounded-lg focus:outline-none bg-slate-50 dark:bg-slate-700 text-center text-2xl">🌿</button>
+            <button type="button" onclick="selectPresetImage('plant-p3')" id="btn-plant-p3" class="preset-img-btn border border-slate-200 dark:border-slate-600 p-1.5 rounded-lg focus:outline-none bg-slate-50 dark:bg-slate-700 text-center text-2xl">🍅</button>
+            <button type="button" onclick="selectPresetImage('plant-p4')" id="btn-plant-p4" class="preset-img-btn border border-slate-200 dark:border-slate-600 p-1.5 rounded-lg focus:outline-none bg-slate-50 dark:bg-slate-700 text-center text-2xl">🌻</button>
+            <button type="button" onclick="selectPresetImage('plant-p5')" id="btn-plant-p5" class="preset-img-btn border border-slate-200 dark:border-slate-600 p-1.5 rounded-lg focus:outline-none bg-slate-50 dark:bg-slate-700 text-center text-2xl">🌲</button>
+          </div>
+          <input type="hidden" id="plant-image-key" value="plant-p1">
+        </div>
+
+        <div class="pt-4 border-t border-slate-100 dark:border-slate-700 flex items-center justify-end gap-3">
+          <button type="button" onclick="toggleModal('plant-modal', false)" class="px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-semibold text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700">취소</button>
+          <button type="submit" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-semibold">저장</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. Plant Detail, Water & Fertilizer Logging Modal -->
+  <div id="detail-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm hidden">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-700">
+      <div class="px-6 py-4 bg-brand-50 dark:bg-slate-700/50 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
+        <h3 id="detail-plant-name" class="font-bold text-slate-900 dark:text-white text-lg">상세 관리 페이지</h3>
+        <button onclick="toggleModal('detail-modal', false)" class="text-slate-400 hover:text-slate-600 dark:hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-6">
+        <!-- Plant Summary Header inside Modal -->
+        <div class="flex items-center gap-4 bg-slate-50 dark:bg-slate-700/40 p-4 rounded-xl">
+          <div id="detail-plant-emoji" class="text-5xl p-2 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">🌱</div>
+          <div class="min-w-0 flex-1">
+            <span id="detail-plant-status" class="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold mb-1">상태 좋음</span>
+            <div id="detail-plant-breed" class="text-xs text-slate-400">상추</div>
+            <div id="detail-plant-dates" class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">파종일: 2026.06.01 (D+35)</div>
+          </div>
+        </div>
+
+        <!-- Logging Inputs for Last Water / Fertilizer dates -->
+        <div class="space-y-4">
+          <h4 class="font-bold text-sm text-slate-700 dark:text-slate-300 border-b border-slate-100 dark:border-slate-700 pb-1.5">
+            수분 및 영양 관리 기록하기
+          </h4>
+          <input type="hidden" id="detail-plant-id">
+          
+          <div class="grid grid-cols-2 gap-4">
+            <!-- Water Log Action card -->
+            <div class="bg-blue-50/50 dark:bg-blue-950/20 p-4 rounded-xl border border-blue-100 dark:border-blue-900/30 flex flex-col justify-between">
+              <div>
+                <span class="text-xs font-semibold text-blue-600 dark:text-blue-400">마지막 물 주기</span>
+                <div class="text-sm font-bold text-slate-700 dark:text-slate-200 mt-1" id="label-last-water">2026-07-01</div>
+                <div class="text-[11px] text-slate-400 mt-0.5" id="label-next-water">다음 물주기: 2026-07-04</div>
+              </div>
+              <button onclick="logWateringNow()" class="mt-3 bg-blue-600 hover:bg-blue-700 text-white py-1.5 px-3 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-1">
+                <i class="fa-solid fa-droplet text-[10px]"></i> 오늘 준 것으로 기록
+              </button>
+            </div>
+
+            <!-- Fertilizer Log Action card -->
+            <div class="bg-amber-50/50 dark:bg-amber-950/20 p-4 rounded-xl border border-amber-100 dark:border-amber-900/30 flex flex-col justify-between">
+              <div>
+                <span class="text-xs font-semibold text-amber-600 dark:text-amber-400">마지막 비료 주기</span>
+                <div class="text-sm font-bold text-slate-700 dark:text-slate-200 mt-1" id="label-last-fertilizer">2026-06-20</div>
+                <div class="text-[11px] text-slate-400 mt-0.5" id="label-next-fertilizer">다음 비료주기: 2026-07-04</div>
+              </div>
+              <button onclick="logFertilizingNow()" class="mt-3 bg-amber-600 hover:bg-amber-700 text-white py-1.5 px-3 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-1">
+                <i class="fa-solid fa-flask text-[10px]"></i> 오늘 준 것으로 기록
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center">
+          <button onclick="handleDetailDeleteBtn()" class="px-3 py-2 text-xs font-semibold border border-rose-200 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-xl transition">
+            <i class="fa-solid fa-trash-can mr-1"></i> 이 식물 삭제
+          </button>
+          <button onclick="toggleModal('detail-modal', false)" class="px-5 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white rounded-xl text-sm font-semibold">
+            확인 및 닫기
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Growth Log Write / Edit Modal -->
+  <div id="log-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm hidden">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-700">
+      <div class="px-6 py-4 bg-brand-50 dark:bg-slate-700/50 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
+        <h3 id="log-modal-title" class="font-bold text-slate-900 dark:text-white">성장 일지 기록</h3>
+        <button onclick="toggleModal('log-modal', false)" class="text-slate-400 hover:text-slate-600 dark:hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form id="log-form" class="p-6 space-y-4">
+        <input type="hidden" id="log-id">
+        
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1">기록 날짜</label>
+          <input type="date" id="log-date" required class="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1">대상 식물 선택</label>
+          <select id="log-plantId" required class="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+            <!-- Dynamically populates with registered plant list -->
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1">일지 이미지 아이콘</label>
+          <div class="grid grid-cols-4 gap-2" id="log-icon-presets">
+            <button type="button" onclick="selectLogIcon('📷')" id="btn-log-p1" class="log-icon-btn border-2 border-brand-500 p-2 rounded-lg text-xl bg-slate-50 dark:bg-slate-700">📷</button>
+            <button type="button" onclick="selectLogIcon('🌻')" id="btn-log-p2" class="log-icon-btn border border-slate-200 dark:border-slate-600 p-2 rounded-lg text-xl bg-slate-50 dark:bg-slate-700">🌻</button>
+            <button type="button" onclick="selectLogIcon('🐛')" id="btn-log-p3" class="log-icon-btn border border-slate-200 dark:border-slate-600 p-2 rounded-lg text-xl bg-slate-50 dark:bg-slate-700">🐛</button>
+            <button type="button" onclick="selectLogIcon('💧')" id="btn-log-p4" class="log-icon-btn border border-slate-200 dark:border-slate-600 p-2 rounded-lg text-xl bg-slate-50 dark:bg-slate-700">💧</button>
+          </div>
+          <input type="hidden" id="log-icon" value="📷">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1">상세 기록 메모</label>
+          <textarea id="log-note" required rows="4" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" placeholder="식물의 오늘 성장 상태나 기온 변화, 병해충 발견 등을 기록해 주세요."></textarea>
+        </div>
+
+        <div class="pt-4 border-t border-slate-100 dark:border-slate-700 flex items-center justify-end gap-3">
+          <button type="button" onclick="toggleModal('log-modal', false)" class="px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-semibold text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700">취소</button>
+          <button type="submit" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-semibold">기록 저장</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- Custom Toast notification (Replacing standard alert) -->
+  <div id="custom-toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-3 bg-slate-900 text-white py-3.5 px-5 rounded-2xl shadow-xl border border-slate-800 text-sm">
+    <i class="fa-solid fa-circle-info text-brand-400" id="toast-icon"></i>
+    <span id="toast-message">이것은 토스트 알림 메시지입니다.</span>
+  </div>
+
+
+  <!-- ==================== WEB APP JAVASCRIPT LOGIC ==================== -->
+  <script>
+    // -------------------------------------------------------------
+    // 1. DATA STRUCTURES & DEFAULT DATA (Local Storage Integrated)
+    // -------------------------------------------------------------
+    const STORAGE_PLANTS_KEY = 'green_thumb_plants_v1';
+    const STORAGE_LOGS_KEY = 'green_thumb_logs_v1';
+    const STORAGE_NOTIF_KEY = 'green_thumb_notif_enabled';
+    const STORAGE_THEME_KEY = 'green_thumb_theme';
+    const STORAGE_DISMISSED_KEY = 'green_thumb_dismissed_tasks_v1';
+
+    // Emoji Image Presets Key matching
+    const PLANT_PRESETS = {
+      'plant-p1': '🌱',
+      'plant-p2': '🌿',
+      'plant-p3': '🍅',
+      'plant-p4': '🌻',
+      'plant-p5': '🌲'
+    };
+
+    // Default Plants mock-up
+    const DEFAULT_PLANTS = [
+      {
+        id: 'p1',
+        name: '방울이',
+        breed: '방울토마토',
+        plantDate: '2026-05-15',
+        location: 'A동 수경재배기',
+        waterCycle: 3,
+        fertilizerCycle: 14,
+        lastWater: '2026-07-04',
+        lastFertilizer: '2026-06-25',
+        imageKey: 'plant-p3'
+      },
+      {
+        id: 'p2',
+        name: '루꼴라베이비',
+        breed: '루꼴라',
+        plantDate: '2026-06-10',
+        location: 'C동 수직텃밭',
+        waterCycle: 2,
+        fertilizerCycle: 10,
+        lastWater: '2026-07-06',
+        lastFertilizer: '2026-06-30',
+        imageKey: 'plant-p2'
+      },
+      {
+        id: 'p3',
+        name: '홍장미',
+        breed: '사계장미',
+        plantDate: '2026-04-20',
+        location: 'B동 토양베드',
+        waterCycle: 5,
+        fertilizerCycle: 20,
+        lastWater: '2026-07-01',
+        lastFertilizer: '2026-06-10',
+        imageKey: 'plant-p4'
+      }
+    ];
+
+    // Default Growth Logs mockup
+    const DEFAULT_LOGS = [
+      {
+        id: 'l1',
+        plantId: 'p1',
+        date: '2026-07-05',
+        icon: '🌻',
+        note: '방울토마토 줄기 끝부분에 첫 번째 노란색 꽃망울이 맺히기 시작했습니다! 날씨가 따뜻해서 공식 성장이 빨라요.'
+      },
+      {
+        id: 'l2',
+        plantId: 'p2',
+        date: '2026-07-04',
+        icon: '🐛',
+        note: '루꼴라 아랫잎 부근에 약간의 진딧물이 보여 조기에 천연 방제 처리를 진행했습니다. 지속적인 수분 관찰이 필요합니다.'
+      }
+    ];
+
+    // Live Sensor Sample Datastructure
+    let sensorData = {
+      temperature: [21.3, 22.1, 23.0, 23.4, 24.1, 24.5],
+      humidity: [62, 60, 59, 58, 58, 58],
+      soilMoisture: [45, 44, 43, 43, 42, 42],
+      lightIntensity: [120, 180, 250, 310, 350, 350],
+      timestamps: [] // Will be initialized as 5s multiples
+    };
+
+    // State Variables
+    let plants = [];
+    let logs = [];
+    let dismissedTasks = []; // Holds items like 'p1_water', 'p2_fertilizer'
+    let notifEnabled = true;
+    let envChart = null;
+    let luxChart = null;
+    
+    // Custom confirm callback
+    let confirmCallback = null;
+
+    // Load Data from Local Storage or default mockup
+    function loadApplicationData() {
+      const savedPlants = localStorage.getItem(STORAGE_PLANTS_KEY);
+      if (savedPlants) {
+        plants = JSON.parse(savedPlants);
+      } else {
+        plants = [...DEFAULT_PLANTS];
+        localStorage.setItem(STORAGE_PLANTS_KEY, JSON.stringify(plants));
+      }
+
+      const savedLogs = localStorage.getItem(STORAGE_LOGS_KEY);
+      if (savedLogs) {
+        logs = JSON.parse(savedLogs);
+      } else {
+        logs = [...DEFAULT_LOGS];
+        localStorage.setItem(STORAGE_LOGS_KEY, JSON.stringify(logs));
+      }
+
+      const savedDismissed = localStorage.getItem(STORAGE_DISMISSED_KEY);
+      if (savedDismissed) {
+        dismissedTasks = JSON.parse(savedDismissed);
+      } else {
+        dismissedTasks = [];
+      }
+
+      const savedNotif = localStorage.getItem(STORAGE_NOTIF_KEY);
+      if (savedNotif !== null) {
+        notifEnabled = savedNotif === 'true';
+      }
+      document.getElementById('settings-notif-toggle').checked = notifEnabled;
+
+      const savedTheme = localStorage.getItem(STORAGE_THEME_KEY) || 'light';
+      setTheme(savedTheme);
+    }
+
+    // Save Utilities
+    function savePlants() {
+      localStorage.setItem(STORAGE_PLANTS_KEY, JSON.stringify(plants));
+    }
+    function saveLogs() {
+      localStorage.setItem(STORAGE_LOGS_KEY, JSON.stringify(logs));
+    }
+    function saveDismissedTasks() {
+      localStorage.setItem(STORAGE_DISMISSED_KEY, JSON.stringify(dismissedTasks));
+    }
+
+
+    // -------------------------------------------------------------
+    // 2. INITIALIZATION & ROUTING
+    // -------------------------------------------------------------
+    window.onload = function() {
+      // 1. Load All stored configurations & data
+      loadApplicationData();
+      
+      // 2. Set Current Real Time Date inside Header
+      updateHeaderDate();
+
+      // 3. Setup Navigation System
+      setupNavigation();
+
+      // 4. Set up Event Listeners & Modals
+      setupFormListeners();
+      setupConfirmModal();
+      setupNotificationBell();
+
+      // 5. Initialize Sensor Data Loop with time sync & Charts
+      initSensorModule();
+
+      // 6. Handle Login Session check (Automatic Demo flow)
+      handleLoginCheck();
+    }
+
+    function updateHeaderDate() {
+      const today = new Date();
+      const options = { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'long' };
+      const formattedDate = today.toLocaleDateString('ko-KR', options);
+      document.getElementById('header-date').innerText = formattedDate;
+    }
+
+    // Setup Custom non-blocking Confirm Dialog
+    function setupConfirmModal() {
+      document.getElementById('confirm-cancel-btn').onclick = function() {
+        toggleModal('confirm-modal', false);
+        confirmCallback = null;
+      };
+
+      document.getElementById('confirm-ok-btn').onclick = function() {
+        if (confirmCallback) {
+          confirmCallback();
+        }
+        toggleModal('confirm-modal', false);
+        confirmCallback = null;
+      };
+    }
+
+    function showConfirm(title, message, onConfirm) {
+      document.getElementById('confirm-title').innerText = title;
+      document.getElementById('confirm-message').innerText = message;
+      confirmCallback = onConfirm;
+      toggleModal('confirm-modal', true);
+    }
+
+    // Toggle and handle Alert Bell Dropdown clicks
+    function setupNotificationBell() {
+      const bellBtn = document.getElementById('alert-bell-btn');
+      const dropdown = document.getElementById('alert-dropdown');
+
+      bellBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        dropdown.classList.toggle('hidden');
+      });
+
+      // Close dropdown when clicking outside
+      document.addEventListener('click', function(e) {
+        if (!dropdown.contains(e.target) && !bellBtn.contains(e.target)) {
+          dropdown.classList.add('hidden');
+        }
+      });
+    }
+
+    // Login system flow
+    function handleLoginCheck() {
+      const form = document.getElementById('login-form');
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const uid = document.getElementById('login-id').value.trim();
+        const upw = document.getElementById('login-pw').value.trim();
+
+        if (uid === 'admin' && upw === '1234') {
+          // Success
+          document.getElementById('login-screen').classList.add('hidden');
+          document.getElementById('main-app').classList.remove('hidden');
+          showToast('로그인에 성공했습니다. 스마트팜에 오신 것을 환영합니다!', 'fa-solid fa-circle-check', 'text-brand-500');
+          
+          // Render Default screen (Dashboard)
+          renderAllViews();
+        } else {
+          // Fail
+          showToast('아이디 또는 비밀번호가 올바르지 않습니다.', 'fa-solid fa-triangle-exclamation', 'text-rose-500');
+        }
+      });
+
+      // Quick Logout handler
+      document.getElementById('logout-btn').onclick = function() {
+        document.getElementById('login-screen').classList.remove('hidden');
+        document.getElementById('main-app').classList.add('hidden');
+        showToast('안전하게 로그아웃 되었습니다.', 'fa-solid fa-circle-info', 'text-indigo-400');
+      };
+    }
+
+    // Dynamic SPA Navigation Switch
+    function setupNavigation() {
+      const navButtons = document.querySelectorAll('#nav-menu .nav-item');
+      
+      navButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          const target = this.getAttribute('data-target');
+          
+          // Remove active styles from all
+          navButtons.forEach(btn => {
+            btn.className = "nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition duration-150 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white";
+          });
+
+          // Set active to clicked
+          this.className = "nav-item active w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition duration-150 text-brand-600 bg-brand-50 dark:text-brand-300 dark:bg-brand-950/40";
+
+          // Header Title update
+          const pageTitleMap = {
+            'dashboard': '대시보드 종합현황',
+            'plants': '식물 관리센터',
+            'sensors': '실시간 센서 모니터링',
+            'logs': '성장 타임라인 일지',
+            'settings': '환경 및 애플리케이션 설정'
+          };
+          document.getElementById('page-title').innerText = pageTitleMap[target] || 'GreenThumb';
+
+          // Hide all screens, show targeted screen
+          const screens = ['dashboard', 'plants', 'sensors', 'logs', 'settings'];
+          screens.forEach(s => {
+            document.getElementById(`page-${s}`).classList.add('hidden');
+          });
+          document.getElementById(`page-${target}`).classList.remove('hidden');
+
+          // Trigger special chart rendering when switching to sensor page
+          if (target === 'sensors') {
+            setTimeout(resizeCharts, 100);
+          }
+
+          // Re-render data for safety
+          renderAllViews();
+        });
+      });
+    }
+
+    // Helper to toggle modal view
+    function toggleModal(modalId, isShow) {
+      const modal = document.getElementById(modalId);
+      if (isShow) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      } else {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    }
+
+
+    // -------------------------------------------------------------
+    // 3. SYSTEM ALGORITHMS (Water/Fertilizer/Task calculation)
+    // -------------------------------------------------------------
+    
+    // Calculates status based on critical factors (such as next water date)
+    function calculatePlantStatus(plant) {
+      const nextWaterDate = getNextDate(plant.lastWater, plant.waterCycle);
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      
+      const diffTime = nextWaterDate - today;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays < 0) {
+        return { label: '관리 필요', colorClass: 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400', borderClass: 'border-rose-400 dark:border-rose-800' };
+      } else if (diffDays === 0 || diffDays === 1) {
+        return { label: '주의', colorClass: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400', borderClass: 'border-amber-400 dark:border-amber-800' };
+      } else {
+        return { label: '좋음', colorClass: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400', borderClass: 'border-emerald-400 dark:border-emerald-800' };
+      }
+    }
+
+    function getNextDate(lastDateStr, cycleDays) {
+      const last = new Date(lastDateStr);
+      last.setHours(0,0,0,0);
+      last.setDate(last.getDate() + parseInt(cycleDays));
+      return last;
+    }
+
+    function formatDateToString(date) {
+      const yyyy = date.getFullYear();
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const dd = String(date.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    // Days counter D+
+    function calculateDDay(startDateStr) {
+      const start = new Date(startDateStr);
+      start.setHours(0,0,0,0);
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const diff = today - start;
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      return days >= 0 ? `D+${days}` : `D-${Math.abs(days)}`;
+    }
+
+
+    // -------------------------------------------------------------
+    // 4. RENDER PROCEDURES & UI LOGIC
+    // -------------------------------------------------------------
+    function renderAllViews() {
+      renderDashboard();
+      renderPlantsList();
+      renderLogsTimeline();
+    }
+
+    // RENDER: DASHBOARD & NOTIFICATION BELL
+    function renderDashboard() {
+      // 1. Header statistic cards
+      document.getElementById('stat-plant-count').innerText = plants.length;
+      document.getElementById('stat-logs-count').innerText = logs.length;
+
+      // 2. Auto-calculate tasks for today
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      
+      let tasks = [];
+
+      plants.forEach(p => {
+        // Water Task Check
+        const nextWater = getNextDate(p.lastWater, p.waterCycle);
+        const waterKey = `${p.id}_water`;
+        
+        // Only trigger task if nextWater is due AND not currently dismissed
+        if (nextWater <= today && !dismissedTasks.includes(waterKey)) {
+          const overDays = Math.floor((today - nextWater) / (1000 * 60 * 60 * 24));
+          tasks.push({
+            plantId: p.id,
+            plantName: p.name,
+            type: 'water',
+            title: '물 주기',
+            desc: overDays > 0 ? `${overDays}일 지연됨 (${p.location})` : `오늘 물 주기 (${p.location})`,
+            icon: 'fa-droplet',
+            colorClass: 'text-blue-500 bg-blue-50 dark:bg-blue-950/30'
+          });
+        }
+
+        // Fertilizer Task Check
+        const nextFert = getNextDate(p.lastFertilizer, p.fertilizerCycle);
+        const fertKey = `${p.id}_fertilizer`;
+
+        if (nextFert <= today && !dismissedTasks.includes(fertKey)) {
+          const overDays = Math.floor((today - nextFert) / (1000 * 60 * 60 * 24));
+          tasks.push({
+            plantId: p.id,
+            plantName: p.name,
+            type: 'fertilizer',
+            title: '영양제 급여',
+            desc: overDays > 0 ? `${overDays}일 지연됨 (${p.location})` : `오늘 비료 공급 (${p.location})`,
+            icon: 'fa-flask',
+            colorClass: 'text-amber-500 bg-amber-50 dark:bg-amber-950/30'
+          });
+        }
+      });
+
+      // Update Task Count badge
+      document.getElementById('stat-tasks-count').innerText = tasks.length;
+      document.getElementById('task-badge').innerText = `${tasks.length}개 예정`;
+      
+      // Control notification badge animation
+      const badge = document.getElementById('alert-badge');
+      if (tasks.length > 0 && notifEnabled) {
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+
+      // Render Floating Notification Bell Dropdown Panel
+      renderAlertDropdown(tasks);
+
+      // Render Task Notifications HTML List (Includes Dismiss button)
+      const taskContainer = document.getElementById('dashboard-tasks-container');
+      if (tasks.length === 0) {
+        taskContainer.innerHTML = `
+          <div class="flex flex-col items-center justify-center h-full text-center text-slate-400 py-10">
+            <i class="fa-solid fa-circle-check text-4xl text-emerald-500 mb-2"></i>
+            <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">오늘 완료해야 할 작업이 없습니다!</p>
+            <p class="text-xs mt-1">식물들이 쾌적하고 건강하게 유지되고 있습니다.</p>
+          </div>`;
+      } else {
+        taskContainer.innerHTML = tasks.map(task => `
+          <div class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-10 h-10 rounded-lg flex items-center justify-center text-lg shrink-0 ${task.colorClass}">
+                <i class="fa-solid ${task.icon}"></i>
+              </div>
+              <div class="min-w-0 flex-1">
+                <h5 class="text-xs text-slate-400 font-semibold truncate">${task.plantName} (${task.title})</h5>
+                <p class="text-sm font-bold text-slate-800 dark:text-white mt-0.5 truncate">${task.desc}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <!-- Dismiss Notification Alarm Button -->
+              <button onclick="dismissTask('${task.plantId}', '${task.type}')" class="p-2 text-slate-400 hover:text-rose-500 rounded-lg transition" title="이 알림 숨기기">
+                <i class="fa-solid fa-xmark text-sm"></i>
+              </button>
+              <button onclick="openDetailModal('${task.plantId}')" class="text-xs font-semibold bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600 px-3 py-1.5 rounded-lg transition">
+                해결하기
+              </button>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Render Recent Growth Logs (Max 3)
+      const recentLogsContainer = document.getElementById('dashboard-recent-logs');
+      const sortedLogs = [...logs].sort((a,b) => new Date(b.date) - new Date(a.date));
+      const targetLogs = sortedLogs.slice(0, 3);
+
+      if (targetLogs.length === 0) {
+        recentLogsContainer.innerHTML = `
+          <div class="col-span-full py-6 text-center text-slate-400 text-xs">
+            아직 등록된 성장 일지가 없습니다.
+          </div>`;
+      } else {
+        recentLogsContainer.innerHTML = targetLogs.map(log => {
+          const plant = plants.find(p => p.id === log.plantId) || { name: '등록안된식물' };
+          return `
+            <div class="p-4 bg-slate-50 dark:bg-slate-700/20 border border-slate-100 dark:border-slate-700/80 rounded-xl flex items-start gap-3">
+              <span class="text-2xl">${log.icon}</span>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-slate-900 dark:text-white">${plant.name}</span>
+                  <span class="text-[10px] text-slate-400">${log.date}</span>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-300 mt-1 line-clamp-2">${log.note}</p>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    // RENDER: ALERT BELL DROPDOWN
+    function renderAlertDropdown(tasks) {
+      const listContainer = document.getElementById('alert-dropdown-list');
+      const countLabel = document.getElementById('alert-dropdown-count');
+
+      // Update count
+      countLabel.innerText = `${tasks.length}개`;
+
+      if (!notifEnabled) {
+        listContainer.innerHTML = `
+          <div class="p-6 text-center text-slate-400 dark:text-slate-500">
+            <i class="fa-regular fa-bell-slash text-2xl mb-2 block"></i>
+            <p class="text-xs">스마트 알림 기능이 꺼져있습니다.</p>
+            <p class="text-[10px] mt-1">설정 페이지에서 알림을 켜주세요.</p>
+          </div>
+        `;
+        return;
+      }
+
+      if (tasks.length === 0) {
+        listContainer.innerHTML = `
+          <div class="p-6 text-center text-slate-400 dark:text-slate-500">
+            <i class="fa-solid fa-circle-check text-2xl text-emerald-500 mb-2 block animate-pulse"></i>
+            <p class="text-xs font-semibold">완료되지 않은 작업이 없습니다.</p>
+            <p class="text-[10px] mt-1">모든 식물이 충분한 케어를 받았습니다.</p>
+          </div>
+        `;
+      } else {
+        listContainer.innerHTML = tasks.map(task => `
+          <div class="p-3 hover:bg-slate-50 dark:hover:bg-slate-700/40 transition flex items-start gap-3 relative group">
+            <!-- Clickable notification content inside row -->
+            <div onclick="handleNotificationClick('${task.plantId}')" class="min-w-0 flex-1 cursor-pointer">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-900 dark:text-white">${task.plantName}</span>
+                <span class="text-[9px] bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400 px-1.5 py-0.5 rounded font-extrabold">${task.title}</span>
+              </div>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 truncate">${task.desc}</p>
+            </div>
+            
+            <!-- Delete Alarm Button directly from drop panel -->
+            <button onclick="event.stopPropagation(); dismissTask('${task.plantId}', '${task.type}')" class="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg opacity-100 md:opacity-0 md:group-hover:opacity-100 transition duration-150 shrink-0 self-center" title="알림 삭제">
+              <i class="fa-solid fa-trash-can text-xs"></i>
+            </button>
+          </div>
+        `).join('');
+      }
+    }
+
+    // Dismiss alarm from showing again until action is done
+    function dismissTask(plantId, type) {
+      const key = `${plantId}_${type}`;
+      if (!dismissedTasks.includes(key)) {
+        dismissedTasks.push(key);
+        saveDismissedTasks();
+      }
+      showToast('알림을 목록에서 지웠습니다. 작업 완료 시 자동 복구됩니다.', 'fa-solid fa-eye-slash', 'text-slate-400');
+      renderAllViews();
+    }
+
+    // Clicking alert row in dropdown opens detail modal immediately
+    function handleNotificationClick(plantId) {
+      const dropdown = document.getElementById('alert-dropdown');
+      dropdown.classList.add('hidden'); // Close dropdown
+      openDetailModal(plantId); // Open corresponding plant detail modal
+    }
+
+    // RENDER: PLANTS LIST
+    function renderPlantsList() {
+      const grid = document.getElementById('plants-grid');
+      const emptyScreen = document.getElementById('plants-empty');
+
+      if (plants.length === 0) {
+        grid.classList.add('hidden');
+        emptyScreen.classList.remove('hidden');
+        return;
+      }
+
+      grid.classList.remove('hidden');
+      emptyScreen.classList.add('hidden');
+
+      grid.innerHTML = plants.map(p => {
+        const dDay = calculateDDay(p.plantDate);
+        const status = calculatePlantStatus(p);
+        const emoji = PLANT_PRESETS[p.imageKey] || '🌱';
+        
+        return `
+          <div class="bg-white dark:bg-slate-800 rounded-2xl border ${status.borderClass} shadow-sm overflow-hidden flex flex-col justify-between">
+            
+            <!-- Card Header -->
+            <div class="p-5 flex items-start gap-4">
+              <!-- Visual -->
+              <div class="text-4xl p-2.5 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-100 dark:border-slate-700 shrink-0">
+                ${emoji}
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between gap-2">
+                  <h4 class="font-bold text-slate-950 dark:text-white text-base truncate">${p.name}</h4>
+                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${status.colorClass}">
+                    ${status.label}
+                  </span>
+                </div>
+                <div class="text-xs text-slate-400 font-medium mt-0.5">${p.breed}</div>
+                <div class="text-xs text-slate-500 dark:text-slate-300 font-semibold mt-1.5 flex items-center gap-1.5">
+                  <span class="bg-brand-50 text-brand-600 dark:bg-slate-700 dark:text-brand-300 px-2 py-0.5 rounded">${dDay}</span>
+                  <span>${p.location}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card Body / Detail Information -->
+            <div class="px-5 pb-4 border-b border-slate-100 dark:border-slate-700/50 space-y-2">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-400">마지막 물 준 날:</span>
+                <span class="font-bold">${p.lastWater} (주기: ${p.waterCycle}일)</span>
+              </div>
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-400">마지막 비료 준 날:</span>
+                <span class="font-bold">${p.lastFertilizer} (주기: ${p.fertilizerCycle}일)</span>
+              </div>
+            </div>
+
+            <!-- Actions Bar -->
+            <div class="bg-slate-50 dark:bg-slate-700/10 px-5 py-3 flex items-center justify-between gap-2">
+              <button onclick="openDetailModal('${p.id}')" class="text-xs font-bold text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1">
+                <i class="fa-solid fa-droplet-slash"></i> 관리 기록
+              </button>
+              <div class="flex items-center gap-1">
+                <button onclick="openEditPlantModal('${p.id}')" class="p-1.5 text-slate-400 hover:text-indigo-500 transition" title="수정">
+                  <i class="fa-regular fa-pen-to-square"></i>
+                </button>
+                <button onclick="deletePlant('${p.id}')" class="p-1.5 text-slate-400 hover:text-rose-500 transition" title="삭제">
+                  <i class="fa-regular fa-trash-can"></i>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        `;
+      }).join('');
+    }
+
+    // RENDER: TIMELINE LOGS
+    function renderLogsTimeline() {
+      const container = document.getElementById('logs-timeline');
+      const emptyScreen = document.getElementById('logs-empty');
+
+      if (logs.length === 0) {
+        container.classList.add('hidden');
+        emptyScreen.classList.remove('hidden');
+        return;
+      }
+
+      container.classList.remove('hidden');
+      emptyScreen.classList.add('hidden');
+
+      // Sort logs by date descending
+      const sorted = [...logs].sort((a,b) => new Date(b.date) - new Date(a.date));
+
+      container.innerHTML = sorted.map((log, index) => {
+        const plant = plants.find(p => p.id === log.plantId) || { name: '등록안된식물', breed: '알수없음' };
+        
+        // Alternating Timeline Side (left / right)
+        const isLeft = index % 2 === 0;
+        const positionClass = isLeft ? 'md:left-0 md:w-1/2' : 'md:right-0 md:w-1/2';
+
+        return `
+          <div class="relative w-full md:flex ${isLeft ? 'justify-end' : 'justify-start'}">
+            <!-- Timeline Center Node Badge -->
+            <div class="absolute left-4 md:left-1/2 top-4 w-9 h-9 rounded-full bg-brand-500 text-white flex items-center justify-center text-sm shadow-md transform md:-translate-x-1/2 z-10">
+              ${log.icon || '📝'}
+            </div>
+
+            <!-- Content Card Box -->
+            <div class="ml-12 md:ml-0 ${positionClass} max-w-lg">
+              <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-sm relative">
+                
+                <!-- Tiny corner arrow for speech bubble design (Desktop only) -->
+                <div class="hidden md:block absolute top-6 w-3 h-3 bg-white dark:bg-slate-800 border-t border-l border-slate-200 dark:border-slate-700 transform ${isLeft ? 'right-[-7px] rotate-135' : 'left-[-7px] -rotate-45'}" style="transform: ${isLeft ? 'translate(50%, -50%) rotate(45deg)' : 'translate(-50%, -50%) rotate(-135deg)'}"></div>
+                
+                <div class="flex items-center justify-between gap-4 mb-2">
+                  <span class="text-xs font-bold text-brand-600 dark:text-brand-300 bg-brand-50 dark:bg-brand-950/40 px-2.5 py-1 rounded-lg">
+                    ${plant.name} (${plant.breed})
+                  </span>
+                  <span class="text-xs text-slate-400 font-semibold">${log.date}</span>
+                </div>
+
+                <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">${log.note}</p>
+                
+                <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700/50 flex items-center justify-end gap-2.5 text-xs">
+                  <button onclick="openLogModal('${log.id}')" class="text-slate-400 hover:text-indigo-500 transition">수정</button>
+                  <span class="text-slate-200 dark:text-slate-700">|</span>
+                  <button onclick="deleteLog('${log.id}')" class="text-slate-400 hover:text-rose-500 transition">삭제</button>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+
+    // -------------------------------------------------------------
+    // 5. INTERACTIVE OPERATIONS (CRUD)
+    // -------------------------------------------------------------
+    
+    // Plant Register Preset selection
+    function selectPresetImage(key) {
+      document.querySelectorAll('.preset-img-btn').forEach(btn => {
+        btn.className = "preset-img-btn border border-slate-200 dark:border-slate-600 p-1.5 rounded-lg focus:outline-none bg-slate-50 dark:bg-slate-700 text-center text-2xl";
+      });
+      document.getElementById(`btn-${key}`).className = "preset-img-btn border-2 border-brand-500 p-1.5 rounded-lg focus:outline-none bg-slate-50 dark:bg-slate-700 text-center text-2xl";
+      document.getElementById('plant-image-key').value = key;
+    }
+
+    // New Plant / Edit submit handler
+    function setupFormListeners() {
+      const plantForm = document.getElementById('plant-form');
+      plantForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const id = document.getElementById('plant-id').value;
+        const name = document.getElementById('plant-name').value.trim();
+        const breed = document.getElementById('plant-breed').value.trim();
+        const plantDate = document.getElementById('plant-plantDate').value;
+        const location = document.getElementById('plant-location').value;
+        const waterCycle = document.getElementById('plant-waterCycle').value;
+        const fertilizerCycle = document.getElementById('plant-fertilizerCycle').value;
+        const imageKey = document.getElementById('plant-image-key').value;
+
+        if (id) {
+          // EDIT existing plant
+          const target = plants.find(p => p.id === id);
+          if (target) {
+            target.name = name;
+            target.breed = breed;
+            target.plantDate = plantDate;
+            target.location = location;
+            target.waterCycle = parseInt(waterCycle);
+            target.fertilizerCycle = parseInt(fertilizerCycle);
+            target.imageKey = imageKey;
+            
+            // If edited, reset dismissed alarms to ensure updated cycle is evaluated
+            dismissedTasks = dismissedTasks.filter(k => !k.startsWith(id));
+            saveDismissedTasks();
+
+            showToast('식물 정보가 성공적으로 수정되었습니다.', 'fa-regular fa-circle-check', 'text-brand-500');
+          }
+        } else {
+          // ADD new plant
+          const todayStr = formatDateToString(new Date());
+          const newPlant = {
+            id: 'p_' + Date.now(),
+            name: name,
+            breed: breed,
+            plantDate: plantDate,
+            location: location,
+            waterCycle: parseInt(waterCycle),
+            fertilizerCycle: parseInt(fertilizerCycle),
+            lastWater: todayStr, // Default to registration date
+            lastFertilizer: todayStr, // Default to registration date
+            imageKey: imageKey
+          };
+          plants.push(newPlant);
+          showToast('새 식물이 등록되었습니다! 꼼꼼한 케어를 시작합니다.', 'fa-solid fa-seedling', 'text-brand-500');
+        }
+
+        savePlants();
+        toggleModal('plant-modal', false);
+        renderAllViews();
+        plantForm.reset();
+      });
+
+      // Growth Log Submit handler
+      const logForm = document.getElementById('log-form');
+      logForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const id = document.getElementById('log-id').value;
+        const date = document.getElementById('log-date').value;
+        const plantId = document.getElementById('log-plantId').value;
+        const icon = document.getElementById('log-icon').value;
+        const note = document.getElementById('log-note').value.trim();
+
+        if (id) {
+          // EDIT existing log
+          const target = logs.find(l => l.id === id);
+          if (target) {
+            target.date = date;
+            target.plantId = plantId;
+            target.icon = icon;
+            target.note = note;
+            showToast('일지가 수정되었습니다.', 'fa-regular fa-circle-check', 'text-sky-500');
+          }
+        } else {
+          // CREATE new log
+          const newLog = {
+            id: 'l_' + Date.now(),
+            plantId: plantId,
+            date: date,
+            icon: icon,
+            note: note
+          };
+          logs.push(newLog);
+          showToast('성장 일지가 새로 등록되었습니다.', 'fa-solid fa-book', 'text-brand-500');
+        }
+
+        saveLogs();
+        toggleModal('log-modal', false);
+        renderAllViews();
+        logForm.reset();
+      });
+    }
+
+    // Open Modal for Editing Plant
+    function openEditPlantModal(id) {
+      const p = plants.find(plant => plant.id === id);
+      if (!p) return;
+
+      document.getElementById('plant-modal-title').innerText = '식물 정보 수정';
+      document.getElementById('plant-id').value = p.id;
+      document.getElementById('plant-name').value = p.name;
+      document.getElementById('plant-breed').value = p.breed;
+      document.getElementById('plant-plantDate').value = p.plantDate;
+      document.getElementById('plant-location').value = p.location;
+      document.getElementById('plant-waterCycle').value = p.waterCycle;
+      document.getElementById('plant-fertilizerCycle').value = p.fertilizerCycle;
+      
+      selectPresetImage(p.imageKey || 'plant-p1');
+      toggleModal('plant-modal', true);
+    }
+
+    // Delete Plant (Secure Custom Confirm Dialog Integration)
+    function deletePlant(id) {
+      const p = plants.find(plant => plant.id === id);
+      if (!p) return;
+
+      showConfirm(
+        '식물 데이터 삭제',
+        `정말로 '${p.name}' 식물과 관련된 모든 성장 일지 및 관리 데이터를 완전 삭제하시겠습니까?`,
+        function() {
+          plants = plants.filter(x => x.id !== id);
+          logs = logs.filter(l => l.plantId !== id);
+          // Also clean up dismissed keys related to this plant
+          dismissedTasks = dismissedTasks.filter(k => !k.startsWith(id));
+          
+          savePlants();
+          saveLogs();
+          saveDismissedTasks();
+          showToast('성공적으로 식물을 완전히 삭제했습니다.', 'fa-regular fa-trash-can', 'text-rose-500');
+          renderAllViews();
+        }
+      );
+    }
+
+    // Open detail management logs modal
+    function openDetailModal(id) {
+      const p = plants.find(plant => plant.id === id);
+      if (!p) return;
+
+      const dDay = calculateDDay(p.plantDate);
+      const status = calculatePlantStatus(p);
+
+      document.getElementById('detail-plant-id').value = p.id;
+      document.getElementById('detail-plant-name').innerText = p.name;
+      document.getElementById('detail-plant-breed').innerText = `${p.breed} | 스마트팜 위치 : ${p.location}`;
+      document.getElementById('detail-plant-dates').innerText = `파종일: ${p.plantDate} (${dDay})`;
+      document.getElementById('detail-plant-emoji').innerText = PLANT_PRESETS[p.imageKey] || '🌱';
+      
+      // Status Badge Styling in Modal
+      const badge = document.getElementById('detail-plant-status');
+      badge.innerText = status.label;
+      badge.className = `inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold mb-1 ${status.colorClass}`;
+
+      // Water Schedule Details update
+      const nextWaterDate = getNextDate(p.lastWater, p.waterCycle);
+      document.getElementById('label-last-water').innerText = p.lastWater;
+      document.getElementById('label-next-water').innerText = `다음 주기: ${formatDateToString(nextWaterDate)}`;
+
+      // Fertilizer Schedule Details update
+      const nextFertDate = getNextDate(p.lastFertilizer, p.fertilizerCycle);
+      document.getElementById('label-last-fertilizer').innerText = p.lastFertilizer;
+      document.getElementById('label-next-fertilizer').innerText = `다음 주기: ${formatDateToString(nextFertDate)}`;
+
+      toggleModal('detail-modal', true);
+    }
+
+    // Handles plant deletion inside details modal
+    function handleDetailDeleteBtn() {
+      const id = document.getElementById('detail-plant-id').value;
+      toggleModal('detail-modal', false);
+      deletePlant(id);
+    }
+
+    // Log Action: WATERING RIGHT NOW
+    function logWateringNow() {
+      const id = document.getElementById('detail-plant-id').value;
+      const p = plants.find(plant => plant.id === id);
+      if (!p) return;
+
+      const todayStr = formatDateToString(new Date());
+      p.lastWater = todayStr;
+
+      // Clean dismissed task key since it was watered (resetting the alarm cycle)
+      const waterKey = `${id}_water`;
+      dismissedTasks = dismissedTasks.filter(k => k !== waterKey);
+      
+      savePlants();
+      saveDismissedTasks();
+      showToast(`${p.name}에게 맑고 깨끗한 영양 수분을 공급했습니다.`, 'fa-solid fa-droplet', 'text-blue-500');
+      
+      // Close detail and redraw
+      toggleModal('detail-modal', false);
+      renderAllViews();
+    }
+
+    // Log Action: FERTILIZING RIGHT NOW
+    function logFertilizingNow() {
+      const id = document.getElementById('detail-plant-id').value;
+      const p = plants.find(plant => plant.id === id);
+      if (!p) return;
+
+      const todayStr = formatDateToString(new Date());
+      p.lastFertilizer = todayStr;
+
+      // Clean dismissed task key since fertilizer was fed (resetting the alarm cycle)
+      const fertKey = `${id}_fertilizer`;
+      dismissedTasks = dismissedTasks.filter(k => k !== fertKey);
+
+      savePlants();
+      saveDismissedTasks();
+      showToast(`${p.name}에게 프리미엄 친환경 액상 비료를 공급했습니다.`, 'fa-solid fa-flask', 'text-amber-500');
+
+      toggleModal('detail-modal', false);
+      renderAllViews();
+    }
+
+
+    // Growth Log Creation / Editing Modals Setup
+    function selectLogIcon(icon) {
+      document.querySelectorAll('.log-icon-btn').forEach(btn => {
+        btn.className = "log-icon-btn border border-slate-200 dark:border-slate-600 p-2 rounded-lg text-xl bg-slate-50 dark:bg-slate-700";
+      });
+      // Find matching btn
+      const mapped = {'📷':'p1', '🌻':'p2', '🐛':'p3', '💧':'p4'};
+      document.getElementById(`btn-log-${mapped[icon]}`).className = "log-icon-btn border-2 border-brand-500 p-2 rounded-lg text-xl bg-slate-50 dark:bg-slate-700";
+      document.getElementById('log-icon').value = icon;
+    }
+
+    function openLogModal(id) {
+      // Build options for Plant selection list dynamically
+      const sel = document.getElementById('log-plantId');
+      if (plants.length === 0) {
+        showToast('일지를 등록하려면 먼저 최소 하나 이상의 식물을 등록해야 합니다!', 'fa-solid fa-circle-exclamation', 'text-amber-500');
+        return;
+      }
+
+      sel.innerHTML = plants.map(p => `<option value="${p.id}">${p.name} (${p.breed})</option>`).join('');
+
+      if (id) {
+        // Edit Mode
+        const log = logs.find(l => l.id === id);
+        if (!log) return;
+        document.getElementById('log-modal-title').innerText = '성장 일지 수정';
+        document.getElementById('log-id').value = log.id;
+        document.getElementById('log-date').value = log.date;
+        document.getElementById('log-plantId').value = log.plantId;
+        document.getElementById('log-note').value = log.note;
+        selectLogIcon(log.icon || '📷');
+      } else {
+        // Create Mode
+        document.getElementById('log-modal-title').innerText = '새 성장 일지 작성';
+        document.getElementById('log-id').value = '';
+        document.getElementById('log-date').value = formatDateToString(new Date());
+        document.getElementById('log-note').value = '';
+        selectLogIcon('📷');
+      }
+
+      toggleModal('log-modal', true);
+    }
+
+    // Delete Growth Log Record
+    function deleteLog(id) {
+      showConfirm(
+        '일지 기록 삭제',
+        '선택하신 성장 일지 타임라인 카드를 삭제하시겠습니까?',
+        function() {
+          logs = logs.filter(l => l.id !== id);
+          saveLogs();
+          showToast('일지가 정상적으로 삭제되었습니다.', 'fa-solid fa-trash-can', 'text-rose-500');
+          renderAllViews();
+        }
+      );
+    }
+
+
+    // -------------------------------------------------------------
+    // 6. HARDWARE SENSORS MODULE (Aligned 5s Ticks & Dual Charting)
+    // -------------------------------------------------------------
+    function generateCleanInitialTimestamps() {
+      // Create starting aligned timestamp labels going back 5 cycles
+      const list = [];
+      const now = Date.now();
+      const baseTime = now - (now % 5000); // exact 5s alignment floor
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(baseTime - i * 5000);
+        list.push(`${d.getMinutes()}분 ${String(d.getSeconds()).padStart(2, '0')}초`);
+      }
+      return list;
+    }
+
+    function initSensorModule() {
+      // 5-second clean timestamps setup
+      sensorData.timestamps = generateCleanInitialTimestamps();
+
+      // Chart 1: Temperature, Humidity, Soil Moisture (Environment standard)
+      const envCtx = document.getElementById('envChart').getContext('2d');
+      envChart = new Chart(envCtx, {
+        type: 'line',
+        data: {
+          labels: sensorData.timestamps,
+          datasets: [
+            {
+              label: '온도 (°C)',
+              data: sensorData.temperature,
+              borderColor: '#f43f5e',
+              backgroundColor: 'rgba(244, 63, 94, 0.08)',
+              tension: 0.35,
+              borderWidth: 2.5
+            },
+            {
+              label: '대기습도 (%)',
+              data: sensorData.humidity,
+              borderColor: '#3b82f6',
+              backgroundColor: 'rgba(59, 130, 246, 0.08)',
+              tension: 0.35,
+              borderWidth: 2.5
+            },
+            {
+              label: '토양수분 (%)',
+              data: sensorData.soilMoisture,
+              borderColor: '#0891b2',
+              backgroundColor: 'rgba(8, 145, 178, 0.08)',
+              tension: 0.35,
+              borderWidth: 2.5
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top', labels: { boxWidth: 10, font: { size: 11 } } }
+          },
+          scales: {
+            y: { beginAtZero: true, grid: { color: 'rgba(148, 163, 184, 0.08)' } }
+          }
+        }
+      });
+
+      // Chart 2: Separated Light Intensity trend (Lux)
+      const luxCtx = document.getElementById('luxChart').getContext('2d');
+      luxChart = new Chart(luxCtx, {
+        type: 'line',
+        data: {
+          labels: sensorData.timestamps,
+          datasets: [
+            {
+              label: '조도 (Lux)',
+              data: sensorData.lightIntensity,
+              borderColor: '#f59e0b',
+              backgroundColor: 'rgba(245, 158, 11, 0.1)',
+              tension: 0.3,
+              borderWidth: 2.5,
+              fill: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top', labels: { boxWidth: 10, font: { size: 11 } } }
+          },
+          scales: {
+            y: { beginAtZero: true, grid: { color: 'rgba(148, 163, 184, 0.08)' } }
+          }
+        }
+      });
+
+      // Start Time Aligned 5-seconds scheduling ticks (00s, 05s, 10s...)
+      startAlignedSensorTicks();
+    }
+
+    // Handles the exact 5-second boundary alignment ticks
+    function startAlignedSensorTicks() {
+      const now = Date.now();
+      // Calculate remaining milliseconds to next precise 5-second interval boundary
+      const nextTickDelay = 5000 - (now % 5000);
+      
+      setTimeout(function tick() {
+        simulateSensorsTick();
+        // Calculate remaining delay again to keep exact alignment against timer drifting
+        const nextDelay = 5000 - (Date.now() % 5000);
+        setTimeout(tick, nextDelay);
+      }, nextTickDelay);
+    }
+
+    // Simulates live IoT hardware ticks
+    function simulateSensorsTick() {
+      // Natural fluid fluctuations
+      const tempDelta = (Math.random() - 0.5) * 0.4;
+      const humidDelta = Math.floor((Math.random() - 0.5) * 3);
+      const soilDelta = Math.floor((Math.random() - 0.5) * 2);
+      const luxDelta = Math.floor((Math.random() - 0.5) * 20);
+
+      const latestTemp = Math.max(15, Math.min(38, (sensorData.temperature[sensorData.temperature.length - 1] + tempDelta))).toFixed(1);
+      const latestHumid = Math.max(20, Math.min(95, (sensorData.humidity[sensorData.humidity.length - 1] + humidDelta)));
+      const latestSoil = Math.max(5, Math.min(99, (sensorData.soilMoisture[sensorData.soilMoisture.length - 1] + soilDelta)));
+      const latestLux = Math.max(0, Math.min(1000, (sensorData.lightIntensity[sensorData.lightIntensity.length - 1] + luxDelta)));
+
+      // Synchronize Clean formatted Time String to array
+      const d = new Date();
+      const timeStr = `${d.getMinutes()}분 ${String(d.getSeconds()).padStart(2, '0')}초`;
+
+      // Keep array to 6 entries
+      sensorData.temperature.shift();
+      sensorData.temperature.push(parseFloat(latestTemp));
+
+      sensorData.humidity.shift();
+      sensorData.humidity.push(latestHumid);
+
+      sensorData.soilMoisture.shift();
+      sensorData.soilMoisture.push(latestSoil);
+
+      sensorData.lightIntensity.shift();
+      sensorData.lightIntensity.push(latestLux);
+
+      sensorData.timestamps.shift();
+      sensorData.timestamps.push(timeStr);
+
+      // Refresh layout displays
+      updateSensorHTMLDisplays(latestTemp, latestHumid, latestSoil, latestLux);
+
+      // Redraw both independent charts
+      if (envChart && envChart.ctx) {
+        envChart.data.labels = sensorData.timestamps;
+        envChart.data.datasets[0].data = sensorData.temperature;
+        envChart.data.datasets[1].data = sensorData.humidity;
+        envChart.data.datasets[2].data = sensorData.soilMoisture;
+        envChart.update('none'); // silent updates
+      }
+      if (luxChart && luxChart.ctx) {
+        luxChart.data.labels = sensorData.timestamps;
+        luxChart.data.datasets[0].data = sensorData.lightIntensity;
+        luxChart.update('none');
+      }
+    }
+
+    function updateSensorHTMLDisplays(temp, humid, soil, lux) {
+      // Dashboard summary Widgets
+      document.getElementById('dash-sensor-temp').innerText = temp;
+      document.getElementById('dash-sensor-humid').innerText = humid;
+      document.getElementById('dash-sensor-soil').innerText = soil;
+      document.getElementById('dash-sensor-lux').innerText = lux;
+
+      // Real Sensors details page Widgets
+      document.getElementById('real-temp').innerText = temp;
+      document.getElementById('real-humid').innerText = humid;
+      document.getElementById('real-soil').innerText = soil;
+      document.getElementById('real-lux').innerText = lux;
+    }
+
+    // Force massive manual fluctuation for simulation
+    function triggerDataSimulation() {
+      const newTemp = (20 + Math.random() * 10).toFixed(1);
+      const newHumid = Math.floor(40 + Math.random() * 40);
+      const newSoil = Math.floor(25 + Math.random() * 50);
+      const newLux = Math.floor(100 + Math.random() * 800);
+
+      updateSensorHTMLDisplays(newTemp, newHumid, newSoil, newLux);
+      showToast('센서 시뮬레이션 데이터가 무작위 적용되었습니다.', 'fa-solid fa-wand-magic-sparkles', 'text-indigo-500');
+    }
+
+    function resizeCharts() {
+      if (envChart) envChart.resize();
+      if (luxChart) luxChart.resize();
+    }
+
+
+    // -------------------------------------------------------------
+    // 7. SETTINGS & APP UTILITIES (Theme, Custom Confirm Reset, Toast)
+    // -------------------------------------------------------------
+    function setTheme(mode) {
+      const html = document.documentElement;
+      const lightBtn = document.getElementById('theme-light-btn');
+      const darkBtn = document.getElementById('theme-dark-btn');
+
+      if (mode === 'dark') {
+        html.classList.add('dark');
+        darkBtn.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition bg-white dark:bg-slate-600 text-brand-500 shadow-sm";
+        lightBtn.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition text-slate-400 hover:text-slate-200";
+      } else {
+        html.classList.remove('dark');
+        lightBtn.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition bg-white text-brand-600 shadow-sm";
+        darkBtn.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition text-slate-500 hover:text-slate-800";
+      }
+      localStorage.setItem(STORAGE_THEME_KEY, mode);
+    }
+
+    // Smart push settings sync
+    function toggleNotificationSetting() {
+      const isChecked = document.getElementById('settings-notif-toggle').checked;
+      notifEnabled = isChecked;
+      localStorage.setItem(STORAGE_NOTIF_KEY, isChecked);
+      
+      showToast(isChecked ? '알림이 켜졌습니다. 주요 작업을 관리해 드립니다.' : '알림을 종료했습니다.', 'fa-regular fa-bell', 'text-indigo-500');
+      renderDashboard();
+    }
+
+    // Handles completely wiping application data safely without window.confirm()
+    function handleWipeDataBtn() {
+      showConfirm(
+        '어플리케이션 공장초기화',
+        '모든 등록된 식물 리스트와 소중한 성장 일지가 완벽히 데이터베이스에서 파기되며 복구 불가합니다. 초기화할까요?',
+        function() {
+          localStorage.removeItem(STORAGE_PLANTS_KEY);
+          localStorage.removeItem(STORAGE_LOGS_KEY);
+          localStorage.removeItem(STORAGE_NOTIF_KEY);
+          localStorage.removeItem(STORAGE_THEME_KEY);
+          localStorage.removeItem(STORAGE_DISMISSED_KEY);
+          
+          showToast('애플리케이션을 초기 데이터 상태로 복구 중입니다.', 'fa-solid fa-arrow-rotate-right', 'text-rose-500');
+          setTimeout(() => {
+            window.location.reload();
+          }, 1200);
+        }
+      );
+    }
+
+    // Custom non-blocking Toast System
+    function showToast(message, iconClass = 'fa-solid fa-circle-info', colorClass = 'text-brand-400') {
+      const toast = document.getElementById('custom-toast');
+      const msgSpan = document.getElementById('toast-message');
+      const icon = document.getElementById('toast-icon');
+
+      msgSpan.innerText = message;
+      icon.className = `${iconClass} ${colorClass} text-lg`;
+
+      // Animation: Slide Up & Fade In
+      toast.className = "fixed bottom-6 right-6 z-50 transform translate-y-0 opacity-100 transition-all duration-300 flex items-center gap-3 bg-slate-900/95 dark:bg-slate-950/95 text-white py-3.5 px-5 rounded-2xl shadow-2xl border border-slate-800 text-sm";
+      
+      // Automatic Hide after 3 seconds
+      setTimeout(() => {
+        toast.className = "fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-3 bg-slate-900 text-white py-3.5 px-5 rounded-2xl shadow-xl border border-slate-800 text-sm";
+      }, 3000);
+    }
+
+  </script>
+</body>
+</html>
